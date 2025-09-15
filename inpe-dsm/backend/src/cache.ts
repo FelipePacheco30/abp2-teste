@@ -1,4 +1,3 @@
-/* 
 import Redis from 'ioredis';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -16,4 +15,3 @@ export async function cacheDelPattern(pattern:string){
   if(keys.length) await redis.del(...keys);
 }
 export default redis;
-*/

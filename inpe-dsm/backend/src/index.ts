@@ -1,21 +1,64 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import dataRoutes from './routes/data';
-import uploadRoutes from './routes/upload';
-import cacheRoutes from './routes/cache';
-import variablesRoutes from './routes/variables';
-import exportRoutes from './routes/export';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-app.use(cors({ origin: "http://localhost:5173" }));
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json());
 
-app.use('/api/data', dataRoutes);
-app.use('/api/data', uploadRoutes);
-app.use('/api/cache', cacheRoutes);
-app.use('/api/data', exportRoutes);
-app.use('/api', variablesRoutes);
+// 🩺 Healthcheck
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// ... suas rotas de dados aqui ...
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
+});
+
+
+
+import pool from "./db";
+
+// rota de teste
+app.get("/api/data/:table", async (req, res) => {
+  try {
+    const { table } = req.params;
+    const { limit, startDate, endDate, reservatorio, variavel } = req.query;
+
+    let query = `SELECT * FROM ${table} WHERE 1=1`;
+    const values: any[] = [];
+
+    // Filtro por data (assumindo coluna "data_coleta")
+    if (startDate && endDate) {
+      values.push(startDate, endDate);
+      query += ` AND data_coleta BETWEEN $${values.length - 1} AND $${values.length}`;
+    }
+
+    // Filtro por reservatório (assumindo coluna "reservatorio_id")
+    if (reservatorio) {
+      values.push(reservatorio);
+      query += ` AND reservatorio_id = $${values.length}`;
+    }
+
+    // Filtro por variável (assumindo coluna "variavel" ou "parametro")
+    if (variavel) {
+      values.push(variavel);
+      query += ` AND variavel = $${values.length}`;
+    }
+
+    // Limite
+    const rowLimit = parseInt(limit as string) || 50;
+    query += ` LIMIT ${rowLimit}`;
+
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erro na consulta:", err);
+    res.status(500).json({ error: "Erro na consulta ao banco" });
+  }
+});

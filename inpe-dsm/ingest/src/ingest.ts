@@ -4,7 +4,7 @@ import Redis from "ioredis";
 import dotenv from "dotenv";
 dotenv.config();
 
-const SQL_FILE = "/data/bd2dsm-copy-postgres-linux.sql"; // respeita a estrutura atual
+const SQL_FILE = "/data/copy-postgres.sql";
 const PSQL_CMD = `psql "${process.env.DATABASE_URL}" -f ${SQL_FILE}`;
 
 async function run() {
